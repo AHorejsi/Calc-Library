@@ -154,9 +154,9 @@ static char* input_value(const radix_option_t option, const radix_direction_t di
     input(prompt, "%s", &value);
     size_t length = strlen(value);
 
-    free(prompt);
-
     new_line();
+
+    free(prompt);
 
     return copy_to_string(value, length);
 }
