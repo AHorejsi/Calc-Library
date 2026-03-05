@@ -13,10 +13,6 @@
 #define POLYNOMIAL_OPTION 7
 
 
-
-#include <stdio.h>
-
-
 typedef enum {
     NUMBER,
     RADIX,
