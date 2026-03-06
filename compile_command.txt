@@ -1,0 +1,1 @@
+gcc -o program alloc.c floating_points.c string_utils.c radian.c coordinate.c print.c error.c rounding.c unit_conversion.c factorize.c radix.c radix_main.c shape2d.c shape2d_main.c start.c main.c

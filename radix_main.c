@@ -1,8 +1,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include "alloc.h"
+#include "string_utils.h"
 #include "print.h"
 #include "error.h"
 #include "radix.h"
@@ -15,6 +17,18 @@
 #define OPTION_HEX 2
 #define OPTION_OCTAL 3
 
+#define DIGITS_BINARY "01"
+#define DIGITS_OCTAL "01234567"
+#define DIGITS_DECIMAL "0123456789"
+#define DIGITS_HEX "0123456789ABCDEF"
+
+#define NAME_DECIMAL "Decimal"
+#define NAME_BINARY "Binary"
+#define NAME_HEX "Hexadecimal"
+#define NAME_OCTAL "Octal"
+
+
+typedef char*(*conversion_t)(const char*);
 
 typedef enum {
     TO,
@@ -66,15 +80,15 @@ static char* find_name_based_on_option(const radix_option_t option) {
 
     switch (option) {
     case BINARY:
-        name = "Binary";
+        name = NAME_BINARY;
 
         break;
     case HEX:
-        name = "Hexadecimal";
+        name = NAME_HEX;
 
         break;
     case OCTAL:
-        name = "Octal";
+        name = NAME_OCTAL;
 
         break;
     }
@@ -82,8 +96,7 @@ static char* find_name_based_on_option(const radix_option_t option) {
     return name;
 }
 
-static radix_direction_t choose_radix_direction(const radix_option_t option) {
-    const char* name = find_name_based_on_option(option);
+static radix_direction_t choose_radix_direction(const radix_option_t option, const char* name) {
     static const char* format =
         "Choose Option:\n"
         "  To %s\n"
@@ -126,30 +139,66 @@ static char* copy_to_string(const char* str, const size_t length) {
     return prompt;
 }
 
-static char* determine_prompt(const radix_option_t option, const radix_direction_t direction) {
+static char* determine_prompt(const radix_option_t option, const radix_direction_t direction, const char* name) {
+    const char* title = (TO == direction) ? NAME_DECIMAL : name;
+    const char* format = "Enter %s Integer: ";
+
     char temp[35];
-    size_t length;
-
-    switch (direction) {
-    case TO:
-        length = sprintf(temp, "Enter Decimal Integer: ");
-        
-        break;
-    case FROM:
-        const char* format = "Enter %s Integer: ";
-        const char* name = find_name_based_on_option(option);
-
-        length = sprintf(temp, format, name);
-
-        break;
-    }
+    size_t length = sprintf(temp, format, title);
 
     return copy_to_string(temp, length);
 }
 
-static char* input_value(const radix_option_t option, const radix_direction_t direction) {
-    char value[30];
-    char* prompt = determine_prompt(option, direction);
+static char* find_digit_set(const radix_option_t option, const radix_direction_t direction) {
+    if (TO == direction) {
+        return DIGITS_DECIMAL;
+    }
+
+    char* digitSet;
+
+    switch (option) {
+    case BINARY:
+        digitSet = DIGITS_BINARY;
+
+        break;
+    case HEX:
+        digitSet = DIGITS_HEX;
+
+        break;
+    case OCTAL:
+        digitSet = DIGITS_OCTAL;
+
+        break;
+    }
+
+    return digitSet;
+}
+
+static bool contains_digit(const char current, const char* digitSet) {
+    for (char* digit = (char*)digitSet; *digit != END_CHAR; ++digit) {
+        if (current == *digit) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool has_correct_digits(const char* value, const radix_option_t option, const radix_direction_t direction) {
+    const char* digitSet = find_digit_set(option, direction);
+
+    for (char* ptr = (char*)value; *ptr != END_CHAR; ++ptr) {
+        if (!contains_digit(*ptr, digitSet)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static char* input_value(const radix_option_t option, const radix_direction_t direction, const char* name) {
+    char value[100];
+    char* prompt = determine_prompt(option, direction, name);
     
     input(prompt, "%s", &value);
     size_t length = strlen(value);
@@ -158,55 +207,62 @@ static char* input_value(const radix_option_t option, const radix_direction_t di
 
     free(prompt);
 
+    if (!has_correct_digits(value, option, direction)) {
+        fail("ERROR: Incorrect format for radix\n");
+    }
+
     return copy_to_string(value, length);
 }
 
-static char* do_binary(const radix_direction_t direction, const char* value) {
-    if (TO == direction) {
-        return to_binary(value);
-    }
-    else {
-        return from_binary(value);
-    }
+static char* decide_direction(const char* value, const radix_direction_t direction, const conversion_t to, const conversion_t from) {
+    return (TO == direction) ? to(value) : from(value);
 }
 
-static char* do_hex(const radix_direction_t direction, const char* value) {
-    if (TO == direction) {
-        return to_hex(value);
-    }
-    else {
-        return from_hex(value);
-    }
-}
-
-static char* do_octal(const radix_direction_t direction, const char* value) {
-    if (TO == direction) {
-        return to_octal(value);
-    }
-    else {
-        return from_octal(value);
-    }
-}
-
-static void find_result(const radix_option_t option, const radix_direction_t direction, char* value) {
-    char* finalResult;
+static char* do_conversion(const char* value, const radix_option_t option, const radix_direction_t direction) {
+    char* result;
 
     switch (option) {
     case BINARY:
-        finalResult = do_binary(direction, value);
+        result = decide_direction(value, direction, to_binary, from_binary);
 
         break;
     case HEX:
-        finalResult = do_hex(direction, value);
+        result = decide_direction(value, direction, to_hex, from_hex);
 
         break;
     case OCTAL:
-        finalResult = do_octal(direction, value);
+        result = decide_direction(value, direction, to_octal, from_octal);
 
         break;
     }
 
-    printf("Result: %s\n", finalResult);
+    return result;
+}
+
+static void find_radix_names(char* start, char* end, const radix_option_t option, const radix_direction_t direction) {
+    char* nonDecimalBaseName = find_name_based_on_option(option);
+    
+    size_t nonDecimalBytes = (strlen(nonDecimalBaseName) + 1) * sizeof(char);
+    size_t decimalBytes = (strlen(NAME_DECIMAL) + 1) * sizeof(char);
+
+    if (FROM == direction) {
+        memcpy(start, nonDecimalBaseName, nonDecimalBytes);
+        memcpy(end, NAME_DECIMAL, decimalBytes);
+    }
+    else {
+        memcpy(start, NAME_DECIMAL, decimalBytes);
+        memcpy(end, nonDecimalBaseName, nonDecimalBytes);
+    }
+}
+
+static void find_result(const radix_option_t option, const radix_direction_t direction, char* value, const char* name) {
+    char* finalResult = do_conversion(value, option, direction);
+
+    char startBaseName[15];
+    char endBaseName[15];
+    find_radix_names(startBaseName, endBaseName, option, direction);
+
+    printf("Result (%s to %s): %s\n", startBaseName, endBaseName, finalResult);
 
     free(value);
     free(finalResult);
@@ -214,7 +270,8 @@ static void find_result(const radix_option_t option, const radix_direction_t dir
 
 void run_radix(void) {
     radix_option_t option = choose_radix_option();
-    radix_direction_t direction = choose_radix_direction(option);
-    char* value = input_value(option, direction);
-    find_result(option, direction, value);
+    const char* name = find_name_based_on_option(option);
+    radix_direction_t direction = choose_radix_direction(option, name);
+    char* value = input_value(option, direction, name);
+    find_result(option, direction, value, name);
 }

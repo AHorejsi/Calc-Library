@@ -16,6 +16,6 @@ bool nearly_equal(const double value1, const double value2) {
         return diff < (DBL_EPSILON * DBL_MIN);
     }
     else {
-        return diff / (fmin(sum, DBL_MAX) < DBL_EPSILON);
+        return diff / fmin(sum, DBL_MAX) < DBL_EPSILON;
     }
 }

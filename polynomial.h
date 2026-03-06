@@ -11,6 +11,8 @@ typedef struct {
 
 double plug_in(const polynomial_t*, const double);
 
+polynomial_t* factor(const polynomial_t*);
+
 polynomial_t plus(const polynomial_t*, const polynomial_t*);
 
 polynomial_t minus(const polynomial_t*, const polynomial_t*);
