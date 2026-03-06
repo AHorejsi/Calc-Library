@@ -143,10 +143,10 @@ static char* determine_prompt(const radix_option_t option, const radix_direction
     const char* title = (TO == direction) ? NAME_DECIMAL : name;
     const char* format = "Enter %s Integer: ";
 
-    char temp[35];
-    size_t length = sprintf(temp, format, title);
+    char prompt[35];
+    size_t length = sprintf(prompt, format, title);
 
-    return copy_to_string(temp, length);
+    return copy_to_string(prompt, length);
 }
 
 static char* find_digit_set(const radix_option_t option, const radix_direction_t direction) {
