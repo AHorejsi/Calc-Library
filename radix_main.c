@@ -215,7 +215,7 @@ static char* input_value(const radix_option_t option, const radix_direction_t di
 }
 
 static char* decide_direction(const char* value, const radix_direction_t direction, const conversion_t to, const conversion_t from) {
-    return (TO == direction) ? to(value) : from(value);
+    return (FROM == direction) ? from(value) : to(value);
 }
 
 static char* do_conversion(const char* value, const radix_option_t option, const radix_direction_t direction) {
