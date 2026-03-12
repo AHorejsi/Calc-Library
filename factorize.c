@@ -3,7 +3,6 @@
 #include "alloc.h"
 #include "factorize.h"
 
-#define INITIAL_CAPACITY 16
 #define CAPACITY_INCREASE_RATE 3 / 2
 
 
@@ -22,30 +21,22 @@ uint32_t* multiples(const uint32_t value, const size_t amount) {
     return multiples;
 }
 
-static void check_for_realloc(uint32_t** values, size_t* capacity, const size_t index) {
-    if (index != *capacity) {
-        return;
-    }
+static size_t do_realloc(uint32_t** values, size_t capacity, const size_t index) {
+    size_t newCapacity = capacity * CAPACITY_INCREASE_RATE;
 
-    size_t newCapacity = (*capacity) * CAPACITY_INCREASE_RATE;
-
-    *capacity = newCapacity;
-    *values = realloc(*values, newCapacity);
-
+    *values = realloc(*values, newCapacity * sizeof(uint32_t));
     check_alloc(*values);
+
+    return newCapacity;
 }
 
-uint32_t* factorize(const uint32_t value) {
+size_t factorize(const uint32_t value, uint32_t* factors, const size_t initialCapacity) {
     if (0 == value) {
-        return NULL;
+        return 0;
     }
 
-    size_t capacity = INITIAL_CAPACITY;
-
-    uint32_t* factors = (uint32_t*)malloc(INITIAL_CAPACITY * sizeof(uint32_t));
-    check_alloc(factors);
-
     size_t index = 0;
+    size_t currentCapacity = initialCapacity;
 
     for (uint32_t divisor = 1; divisor <= value; ++divisor) {
         if (0 != value % divisor) {
@@ -55,12 +46,14 @@ uint32_t* factorize(const uint32_t value) {
         factors[index] = divisor;
         ++index;
 
-        check_for_realloc(&factors, &capacity, index);
+        if (index == currentCapacity) {
+            currentCapacity = do_realloc(&factors, currentCapacity, index);
+        }
     }
 
     factors[index] = END_FACTOR;
 
-    return factors;
+    return index;
 }
 
 bool is_prime(const uint32_t value) {
@@ -79,15 +72,12 @@ bool is_prime(const uint32_t value) {
     return true;
 }
 
-uint32_t* prime_factorize(const uint32_t value) {
+size_t prime_factorize(const uint32_t value, uint32_t* factors, const size_t initialCapacity) {
     if (value <= 1) {
-        return NULL;
+        return 0;
     }
 
-    size_t capacity = INITIAL_CAPACITY;
-
-    uint32_t* primes = (uint32_t*)malloc(INITIAL_CAPACITY * sizeof(uint32_t));
-    check_alloc(primes);
+    size_t currentCapacity = initialCapacity;
 
     uint32_t current = value;
     uint32_t divisor = 2;
@@ -98,16 +88,80 @@ uint32_t* prime_factorize(const uint32_t value) {
             ++divisor;
         }
         else {
-            primes[index] = divisor;
+            factors[index] = divisor;
 
             current /= divisor;
             ++index;
 
-            check_for_realloc(&primes, &capacity, index);
+            if (index == currentCapacity) {
+                currentCapacity = do_realloc(&factors, currentCapacity, index);
+            }
         }
     }
 
-    primes[index] = END_FACTOR;
+    factors[index] = END_FACTOR;
+
+    return index;
+}
+
+static bool* make_initial_primality(const uint32_t length) {
+    const bool IS_PRIME = true;
+
+    bool* primality = (bool*)falloc(length, sizeof(bool), &IS_PRIME);
+    primality[0] = false;
+
+    return primality;
+}
+
+static size_t mark_multiples(const uint32_t length, const size_t index, bool* primality) {
+    size_t amountRemoved = 0;
+
+    uint32_t prime = index + 1;
+
+    for (size_t nextIndex = index + 2; nextIndex < length; ++nextIndex) {
+        uint32_t value = nextIndex + 1;
+
+        if (0 == value % prime) {
+            primality[nextIndex] = false;
+            ++amountRemoved;
+        }
+    }
+
+    return amountRemoved;
+}
+
+static uint32_t* retrieve_primes(bool* primality, const uint32_t length, const size_t count) {
+    uint32_t* primes = (uint32_t*)malloc(count * sizeof(uint32_t));
+    check_alloc(primes);
+
+    for (size_t index = 0; index < length; ++index) {
+        if (primality[index]) {
+            uint32_t value = index + 1;
+
+            primes[index] = value;
+        }
+    }
+
+    free(primality);
 
     return primes;
+}
+
+uint32_t* primes_under(const uint32_t value) {
+    if (value <= 1) {
+        return NULL;
+    }
+
+    size_t count = value - 1;
+    size_t length = value;
+
+    bool* primality = make_initial_primality(length);
+
+    for (size_t index = 1; index < length; ++index) {
+        if (primality[index]) {
+            count -= mark_multiples(length, index, primality);
+        }
+    }
+
+    return retrieve_primes(primality, length, count);
 }

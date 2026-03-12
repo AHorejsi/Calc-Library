@@ -34,9 +34,8 @@ point2d_t rotate_and_translate(point2d_t point, const point2d_t center, const do
 double distance(const point2d_t pos1, const point2d_t pos2) {
     double xDiff = pos1.xPos - pos2.xPos;
     double yDiff = pos1.yPos - pos2.yPos;
-    double result = sqrt(xDiff * xDiff + yDiff * yDiff);
 
-    return result;
+    return sqrt(xDiff * xDiff + yDiff * yDiff);
 }
 
 line_t between(const point2d_t first, const point2d_t second) {

@@ -1,8 +1,12 @@
 #include <math.h>
+#include "digits.h"
 #include "rounding.h"
 
+#define BASE_ROUNDING 10
+
+
 static uint32_t power_of_ten(const uint8_t power) {
-    return (uint32_t)pow(10, power);
+    return (uint32_t)pow(BASE_ROUNDING, power);
 }
 
 double rounded(const double value, const uint8_t places) {
@@ -27,7 +31,7 @@ static double sigfig_decimal(const double value, const uint8_t places, const uin
 
 double sigfig(const double value, const uint8_t places) {
     int32_t intPart = (int32_t)value;
-    uint8_t lengthOfIntPart = (uint8_t)log10(abs(intPart)) + 1;
+    uint8_t lengthOfIntPart = get_digit_count(intPart, BASE_ROUNDING);
 
     if (lengthOfIntPart >= places) {
         return sigfig_integer(intPart, places);

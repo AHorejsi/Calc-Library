@@ -1,99 +1,44 @@
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "start.h"
-#include "error.h"
 #include "print.h"
-
-#define NUMBER_OPTION 1
-#define RADIX_OPTION 2
-#define UNIT_CONVERT_OPTION 3
-#define SHAPE2D_OPTION 4
-#define SHAPE3D_OPTION 5
-#define STATS_OPTION 6
-#define POLYNOMIAL_OPTION 7
-#define EXIT_OPTION 8
+#include "error.h"
+#include "start.h"
 
 
 typedef enum {
-    NUMBER,
+    RATIONAL,
+    COMPLEX,
+    ROUNDING,
     RADIX,
+    FACTORIZE,
     UNIT_CONVERSION,
     SHAPE2D,
-    SHAPE3D,
     STATISTICS,
     POLYNOMIAL,
-    TERMINATE_PROGRAM
+    TERMINATION
 } math_option_t;
 
-static math_option_t choose_math_option(void) {
-    static const char* prompt =
-        "Choose Option:\n"
-        "  Numbers(1)\n"
-        "  Radix(2)\n"
-        "  Unit Converter(3)\n"
-        "  2D Shapes(4)\n"
-        "  3D Shapes(5)\n"
-        "  Statistics(6)\n"
-        "  Polynomial(7)\n"
-        "  Exit(8)\n"
-        "Enter (1-8): ";
-    uint8_t choice;
-    input(prompt, "%u", &choice);
-
-    new_line();
-
-    math_option_t option;
-
-    switch (choice) {
-    case NUMBER_OPTION:
-        option = NUMBER;
-
-        break;
-    case RADIX_OPTION:
-        option = RADIX;
-
-        break;
-    case UNIT_CONVERT_OPTION:
-        option = UNIT_CONVERSION;
-
-        break;
-    case SHAPE2D_OPTION:
-        option = SHAPE2D;
-
-        break;
-    case SHAPE3D_OPTION:
-        option = SHAPE3D;
-
-        break;
-    case STATS_OPTION:
-        option = STATISTICS;
-
-        break;
-    case POLYNOMIAL_OPTION:
-        option = POLYNOMIAL;
-
-        break;
-    case EXIT_OPTION:
-        option = TERMINATE_PROGRAM;
-
-        break;
-    default:
-        fail("ERROR: Input must be between 1 and 8\n");
-    }
-
-    return option;
-}
-
-static void do_math_operation(const math_option_t option) {
+static void do_operation(const math_option_t option) {
     switch (option) {
-    case NUMBER:
+    case RATIONAL:
+        fail("Not yet implemented");
+
+        break;
+    case COMPLEX:
+        fail("Not yet implemented");
+
+        break;
+    case ROUNDING:
         fail("Not yet implemented");
 
         break;
     case RADIX:
         radix_start();
+
+        break;
+    case FACTORIZE:
+        fail("Not yet implemented");
 
         break;
     case UNIT_CONVERSION:
@@ -102,10 +47,6 @@ static void do_math_operation(const math_option_t option) {
         break;
     case SHAPE2D:
         shape2d_start();
-
-        break;
-    case SHAPE3D:
-        fail("Not yet implemented");
 
         break;
     case STATISTICS:
@@ -117,23 +58,37 @@ static void do_math_operation(const math_option_t option) {
 
         break;
     default:
-        fail("Ya done goofed, Mr. Coder Man\n");
+        fail("Ya done goofed, Mr. Coder Man");
     }
 }
 
 int main(void) {
+    const char* prompt =
+        "Choose Option:\n"
+        "  Rational(1)\n"
+        "  Complex(2)\n"
+        "  Rounding(3)\n"
+        "  Radix(4)\n"
+        "  Factorize(5)\n"
+        "  Unit Converter(6)\n"
+        "  2D Shape(7)\n"
+        "  Statistics(8)\n"
+        "  Polynomial(9)\n"
+        "  Exit(10)\n"
+        "Enter (1-10): ";
+    
     while (true) {
-        math_option_t option = choose_math_option();
+        math_option_t option = input_menu_option(prompt, TERMINATION);
 
-        if (TERMINATE_PROGRAM == option) {
+        if (TERMINATION == option) {
             break;
         }
 
-        do_math_operation(option);
-        new_line();
+        do_operation(option);
     }
 
-    printf("Exiting...\n");
+    show("Exiting...");
+    new_line();
 
     return EXIT_SUCCESS;
 }

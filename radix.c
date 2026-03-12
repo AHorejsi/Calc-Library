@@ -5,6 +5,7 @@
 #include <string.h>
 #include "alloc.h"
 #include "string_utils.h"
+#include "digits.h"
 #include "radix.h"
 
 #define RADIX_BINARY 2
@@ -51,17 +52,10 @@ static uint64_t to_integer(const char* value, const uint8_t radix, const char* d
     return result;
 }
 
-static size_t get_digit_length(const uint64_t value, const uint8_t radix) {
-    double valueLog = log(value);
-    double radixLog = log(radix);
-
-    return (size_t)(valueLog / radixLog) + 1;
-}
-
-static char* to_string(const uint64_t decimal, const uint8_t radix, const char* digitSet, bool isNegative) {
+static char* to_string(const uint64_t decimal, const uint8_t radix, const char* digitSet, const bool isNegative) {
     int8_t startIndex = pad_for_negative_sign(isNegative);
 
-    size_t endIndex = get_digit_length(decimal, radix);
+    size_t endIndex = get_digit_count(decimal, radix);
     uint64_t remain = decimal;
 
     char* str = (char*)malloc((endIndex + startIndex + 1) * sizeof(char));
@@ -69,11 +63,9 @@ static char* to_string(const uint64_t decimal, const uint8_t radix, const char* 
 
     for (ptrdiff_t index = endIndex - 1; index >= startIndex; --index) {
         uint8_t digitIndex = remain % radix;
-        char digit = to_char(digitIndex, digitSet);
-
-        str[index] = digit;
-
         remain /= radix;
+
+        str[index] = to_char(digitIndex, digitSet);
     }
 
     str[endIndex] = END_CHAR;
@@ -91,7 +83,7 @@ static bool matches_radix(const char* value, const uint8_t radix, const char* di
     for (char* ptr = (char*)(value + startIndex); *ptr != END_CHAR; ++ptr) {
         uint8_t digit = from_char(*ptr, digitSet);
 
-        if (digit < 0 || digit >= radix) {
+        if (digit >= radix) {
             return false;
         }
     }
@@ -131,7 +123,7 @@ static char* from_base(const char* value, uint8_t radix) {
         return NULL;
     }
 
-    uint64_t decimal = to_integer(value, radix,  HEX_DIGIT_SET, isNegative);
+    uint64_t decimal = to_integer(value, radix, HEX_DIGIT_SET, isNegative);
     char* result = to_string(decimal, RADIX_DECIMAL, HEX_DIGIT_SET, isNegative);
 
     return result;

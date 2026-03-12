@@ -47,7 +47,7 @@ static double coef_add(const double left, const double right) {
     return left + right;
 }
 
-polynomial_t plus(const polynomial_t* left, const polynomial_t* right) {
+polynomial_t polynomial_plus(const polynomial_t* left, const polynomial_t* right) {
     return linear_operation(left, right, coef_add);
 }
 
@@ -55,11 +55,11 @@ static double coef_subtract(const double left, const double right) {
     return left - right;
 }
 
-polynomial_t minus(const polynomial_t* left, const polynomial_t* right) {
+polynomial_t polynomial_minus(const polynomial_t* left, const polynomial_t* right) {
     return linear_operation(left, right, coef_subtract);
 }
 
-polynomial_t multiply(const polynomial_t* left, const polynomial_t* right) {
+polynomial_t polynomial_mult(const polynomial_t* left, const polynomial_t* right) {
     size_t newCount = left->count * right->count;
 
     double* coefficients = (double*)malloc(newCount * sizeof(double));

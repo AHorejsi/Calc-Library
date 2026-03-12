@@ -10,13 +10,6 @@
 #include "radix.h"
 #include "radix_main.h"
 
-#define OPTION_TO 1
-#define OPTION_FROM 2
-
-#define OPTION_BINARY 1
-#define OPTION_HEX 2
-#define OPTION_OCTAL 3
-
 #define DIGITS_BINARY "01"
 #define DIGITS_OCTAL "01234567"
 #define DIGITS_DECIMAL "0123456789"
@@ -48,31 +41,8 @@ static radix_option_t choose_radix_option(void) {
         "  Hexadecimal(2)\n"
         "  Octal(3)\n"
         "Enter (1-3): ";
-    uint8_t choice;
-    input(prompt, "%u", &choice);
-
-    new_line();
-
-    radix_option_t option;
-
-    switch (choice) {
-    case OPTION_BINARY:
-        option = BINARY;
-
-        break;
-    case OPTION_HEX:
-        option = HEX;
-
-        break;
-    case OPTION_OCTAL:
-        option = OCTAL;
-
-        break;
-    default:
-        fail("ERROR: Input must be between 1 and 3\n");
-    }
-
-    return option;
+    
+    return input_menu_option(prompt, OCTAL);
 }
 
 static char* find_name_based_on_option(const radix_option_t option) {
@@ -105,48 +75,13 @@ static radix_direction_t choose_radix_direction(const radix_option_t option, con
     char prompt[70];
     sprintf(prompt, format, name, name);
 
-    uint8_t choice;
-    input(prompt, "%u", &choice);
-
-    new_line();
-
-    radix_direction_t direction;
-
-    switch (choice) {
-    case OPTION_TO:
-        direction = TO;
-
-        break;
-    case OPTION_FROM:
-        direction = FROM;
-
-        break;
-    default:
-        fail("ERROR: Input must be between 1 and 2\n");
-    }
-
-    return direction;
+    return input_menu_option(prompt, FROM);
 }
 
-static char* copy_to_string(const char* str, const size_t length) {
-    size_t byteCount = (length + 1) * sizeof(char);
-
-    char* prompt = (char*)malloc(byteCount);
-    check_alloc(prompt);
-
-    memcpy(prompt, str, byteCount);
-
-    return prompt;
-}
-
-static char* determine_prompt(const radix_option_t option, const radix_direction_t direction, const char* name) {
+static void determine_prompt(char* prompt, const radix_direction_t direction, const char* name) {
     const char* title = (TO == direction) ? NAME_DECIMAL : name;
-    const char* format = "Enter %s Integer: ";
 
-    char prompt[35];
-    size_t length = sprintf(prompt, format, title);
-
-    return copy_to_string(prompt, length);
+    sprintf(prompt, "Enter %s Integer: ", title);
 }
 
 static char* find_digit_set(const radix_option_t option, const radix_direction_t direction) {
@@ -197,21 +132,20 @@ static bool has_correct_digits(const char* value, const radix_option_t option, c
 }
 
 static char* input_value(const radix_option_t option, const radix_direction_t direction, const char* name) {
-    char value[100];
-    char* prompt = determine_prompt(option, direction, name);
+    char prompt[40];
+    determine_prompt(prompt, direction, name);
     
+    char* value = (char*)malloc(100 * sizeof(char));
+    check_alloc(value);
+
     input(prompt, "%s", &value);
-    size_t length = strlen(value);
-
     new_line();
-
-    free(prompt);
 
     if (!has_correct_digits(value, option, direction)) {
         fail("ERROR: Incorrect format for radix\n");
     }
 
-    return copy_to_string(value, length);
+    return value;
 }
 
 static char* decide_direction(const char* value, const radix_direction_t direction, const conversion_t to, const conversion_t from) {
@@ -245,14 +179,29 @@ static void find_radix_names(char* start, char* end, const radix_option_t option
     size_t nonDecimalBytes = (strlen(nonDecimalBaseName) + 1) * sizeof(char);
     size_t decimalBytes = (strlen(NAME_DECIMAL) + 1) * sizeof(char);
 
+    char* startName;
+    char* endName;
+
+    size_t startBytes;
+    size_t endBytes;
+
     if (FROM == direction) {
-        memcpy(start, nonDecimalBaseName, nonDecimalBytes);
-        memcpy(end, NAME_DECIMAL, decimalBytes);
+        startName = nonDecimalBaseName;
+        startBytes = nonDecimalBytes;
+
+        endName = NAME_DECIMAL;
+        endBytes = decimalBytes;
     }
     else {
-        memcpy(start, NAME_DECIMAL, decimalBytes);
-        memcpy(end, nonDecimalBaseName, nonDecimalBytes);
+        endName = nonDecimalBaseName;
+        endBytes = nonDecimalBytes;
+
+        startName = NAME_DECIMAL;
+        startBytes = decimalBytes;
     }
+
+    memcpy(start, startName, startBytes);
+    memcpy(end, endName, endBytes);
 }
 
 static void find_result(const radix_option_t option, const radix_direction_t direction, char* value, const char* name) {
@@ -262,7 +211,8 @@ static void find_result(const radix_option_t option, const radix_direction_t dir
     char endBaseName[15];
     find_radix_names(startBaseName, endBaseName, option, direction);
 
-    printf("Result (%s to %s): %s\n", startBaseName, endBaseName, finalResult);
+    printf("Result (%s -> %s): %s\n", startBaseName, endBaseName, finalResult);
+    new_line();
 
     free(value);
     free(finalResult);

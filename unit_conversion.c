@@ -76,8 +76,6 @@ static int8_t find_exponent(const unit_prefix_t prefix) {
         power = EXP_TERA;
 
         break;
-    default:
-        fail("Ya done goofed, Mr. Coder Man");
     }
 
     return power;
