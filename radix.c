@@ -14,7 +14,6 @@
 #define RADIX_DECIMAL 10
 
 #define MIN_DIGIT '0'
-#define NEG_SIGN '-'
 
 #define HEX_DIGIT_SET "ABCDEF"
 #define EMPTY_DIGIT_SET ""
@@ -38,7 +37,7 @@ static uint64_t to_integer(const char* value, const uint8_t radix, const char* d
     uint64_t result = 0;
 
     int8_t startIndex = pad_for_negative_sign(isNegative);
-    size_t exponent = strlen(value) - startIndex - 1;
+    size_t exponent = strlen(value) - startIndex - 2;
 
     for (char* ptr = (char*)(value + startIndex); *ptr != END_CHAR; ++ptr) {
         uint8_t digit = from_char(*ptr, digitSet);
@@ -55,20 +54,23 @@ static uint64_t to_integer(const char* value, const uint8_t radix, const char* d
 static char* to_string(const uint64_t decimal, const uint8_t radix, const char* digitSet, const bool isNegative) {
     int8_t startIndex = pad_for_negative_sign(isNegative);
 
-    size_t endIndex = get_digit_count(decimal, radix);
-    uint64_t remain = decimal;
+    size_t digitLength = get_digit_count(decimal, radix);
+    size_t totalLength = digitLength + startIndex + 1;
 
-    char* str = (char*)malloc((endIndex + startIndex + 1) * sizeof(char));
+    char* str = (char*)malloc(totalLength * sizeof(char));
     check_alloc(str);
 
-    for (ptrdiff_t index = endIndex - 1; index >= startIndex; --index) {
+    uint64_t remain = decimal;
+
+    for (ptrdiff_t index = totalLength - 2; index >= startIndex; --index) {
         uint8_t digitIndex = remain % radix;
+
         remain /= radix;
 
         str[index] = to_char(digitIndex, digitSet);
     }
 
-    str[endIndex] = END_CHAR;
+    str[totalLength - 1] = END_CHAR;
 
     if (isNegative) {
         str[0] = NEG_SIGN;
@@ -80,7 +82,7 @@ static char* to_string(const uint64_t decimal, const uint8_t radix, const char* 
 static bool matches_radix(const char* value, const uint8_t radix, const char* digitSet, const bool isNegative) {
     int8_t startIndex = pad_for_negative_sign(isNegative);
 
-    for (char* ptr = (char*)(value + startIndex); *ptr != END_CHAR; ++ptr) {
+    for (char* ptr = (char*)(value) + startIndex; *ptr != END_CHAR; ++ptr) {
         uint8_t digit = from_char(*ptr, digitSet);
 
         if (digit >= radix) {

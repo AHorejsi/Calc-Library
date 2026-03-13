@@ -1,6 +1,8 @@
 #ifndef RADIX_H
 #define RADIX_H
 
+#define NEG_SIGN '-'
+
 
 char* to_binary(const char*);
 

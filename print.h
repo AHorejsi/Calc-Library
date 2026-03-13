@@ -4,7 +4,15 @@
 #include <stdint.h>
 
 
-void input(const char*, const char*, void*);
+typedef enum {
+    WHOLE,
+    INTEGER,
+    DECIMAL,
+    STRING,
+    MENU
+} input_format_t;
+
+void input(const char*, const input_format_t, void*);
 
 uint8_t input_menu_option(const char*, const uint8_t);
 

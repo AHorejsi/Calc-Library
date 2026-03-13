@@ -5,4 +5,4 @@
 #include "string_utils.h"
 
 
-const char END_CHAR = '\0';
+const char END_CHAR = '\n';

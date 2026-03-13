@@ -6,23 +6,45 @@
 #include "error.h"
 #include "print.h"
 
+#define INPUT_SIZE 30
 
-static void do_scan(void* ptr) {
-    char response[30];
+
+static void do_scan(const input_format_t format, void* ptr) {
+    char response[INPUT_SIZE];
 
     if (NULL == fgets(response, sizeof(response), stdin)) {
-        fail("\nFailed to read input\n");
+        fail("\nFailed to read user input\n");
     }
-    
-    char* endPtr;
-    uint8_t value = strtoul(response, &endPtr, 10);
 
-    memcpy(ptr, &value, sizeof(uint8_t));
+    char* _;
+
+    switch (format) {
+    case WHOLE:
+        *((uint64_t*)ptr) = strtoull(response, &_, 10);
+
+        break;
+    case INTEGER:
+        *((int64_t*)ptr) = strtoll(response, &_, 10);
+
+        break;
+    case DECIMAL:
+        *((double*)ptr) = strtod(response, &_);
+
+        break;
+    case STRING:
+        strcpy((char*)ptr, response);
+
+        break;
+    case MENU:
+        *((int8_t*)ptr) = atoi(response);
+
+        break;
+    }
 }
 
-void input(const char* prompt, const char* format, void* ptr) {
+void input(const char* prompt, const input_format_t format, void* ptr) {
     printf(prompt);
-    do_scan(ptr);
+    do_scan(format, ptr);
     fflush(stdin);
 }
 
@@ -32,7 +54,7 @@ uint8_t input_menu_option(const char* prompt, const uint8_t max) {
     while (true) {
         option = -1;
 
-        input(prompt, "%d", &option);
+        input(prompt, MENU, &option);
         new_line();
 
         --option;

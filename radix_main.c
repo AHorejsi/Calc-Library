@@ -84,29 +84,26 @@ static void determine_prompt(char* prompt, const radix_direction_t direction, co
     sprintf(prompt, "Enter %s Integer: ", title);
 }
 
-static char* find_digit_set(const radix_option_t option, const radix_direction_t direction) {
+static void find_digit_set(const radix_option_t option, const radix_direction_t direction, char* digitSet) {
     if (TO == direction) {
-        return DIGITS_DECIMAL;
+        strcpy(digitSet, DIGITS_DECIMAL);
     }
+    else {
+        switch (option) {
+        case BINARY:
+            strcpy(digitSet, DIGITS_BINARY);
 
-    char* digitSet;
+            break;
+        case HEX:
+            strcpy(digitSet, DIGITS_HEX);
 
-    switch (option) {
-    case BINARY:
-        digitSet = DIGITS_BINARY;
+            break;
+        case OCTAL:
+            strcpy(digitSet, DIGITS_OCTAL);
 
-        break;
-    case HEX:
-        digitSet = DIGITS_HEX;
-
-        break;
-    case OCTAL:
-        digitSet = DIGITS_OCTAL;
-
-        break;
+            break;
+        }
     }
-
-    return digitSet;
 }
 
 static bool contains_digit(const char current, const char* digitSet) {
@@ -119,10 +116,20 @@ static bool contains_digit(const char current, const char* digitSet) {
     return false;
 }
 
-static bool has_correct_digits(const char* value, const radix_option_t option, const radix_direction_t direction) {
-    const char* digitSet = find_digit_set(option, direction);
+static const char* find_first_digit(const char* value) {
+    if (NEG_SIGN == value[0]) {
+        return value + 1;
+    }
+    else {
+        return value;
+    }
+}
 
-    for (char* ptr = (char*)value; *ptr != END_CHAR; ++ptr) {
+static bool has_correct_digits(const char* value, const radix_option_t option, const radix_direction_t direction) {
+    char digitSet[20];
+    find_digit_set(option, direction, digitSet);
+
+    for (char* ptr = (char*)find_first_digit(value); *ptr != END_CHAR; ++ptr) {
         if (!contains_digit(*ptr, digitSet)) {
             return false;
         }
@@ -138,7 +145,7 @@ static char* input_value(const radix_option_t option, const radix_direction_t di
     char* value = (char*)malloc(100 * sizeof(char));
     check_alloc(value);
 
-    input(prompt, "%s", &value);
+    input(prompt, STRING, value);
     new_line();
 
     if (!has_correct_digits(value, option, direction)) {

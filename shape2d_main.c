@@ -32,10 +32,10 @@ typedef struct {
 
 static point2d_t input_center(void) {
     double xPos;
-    input("Enter the X-position of the center of the shape: ", "%lf", &xPos);
+    input("Enter the X-position of the center of the shape: ", DECIMAL, &xPos);
 
     double yPos;
-    input("Enter the Y-position of the center of the shape: ", "%lf", &yPos);
+    input("Enter the Y-position of the center of the shape: ", DECIMAL, &yPos);
 
     new_line();
 
@@ -54,7 +54,7 @@ static size_t input_point_count(const shape_option_t option) {
     }
 
     size_t pointCount;
-    input("Enter the amount of points to use: ", "%u", &pointCount);
+    input("Enter the amount of points to use: ", WHOLE, &pointCount);
     ensure_greater_than(pointCount, 2, "Point Count");
 
     new_line();
@@ -68,7 +68,7 @@ static double input_rotation(const shape_option_t option) {
     }
 
     double rotationInDegrees;
-    input("Enter the angle of rotation (degrees): ", "%lf", &rotationInDegrees);
+    input("Enter the angle of rotation (degrees): ", DECIMAL, &rotationInDegrees);
 
     new_line();
     
@@ -121,7 +121,7 @@ static void display_properties(const shape_t* shape, const shape_option_t option
 
 static shape_t* input_circle(void) {
     double radius;
-    input("Enter radius: ", "%lf", &radius);
+    input("Enter radius: ", DECIMAL, &radius);
     ensure_positive(radius, "Radius");
 
     return make_circle(radius);
@@ -129,11 +129,11 @@ static shape_t* input_circle(void) {
 
 static shape_t* input_ellipse(void) {
     double vertical;
-    input("Enter vertical height: ", "%lf", &vertical);
+    input("Enter vertical height: ", DECIMAL, &vertical);
     ensure_positive(vertical, "Vertical Height");
 
     double horizontal;
-    input("Enter horizontal width: ", "%lf", &horizontal);
+    input("Enter horizontal width: ", DECIMAL, &horizontal);
     ensure_positive(horizontal, "Horizontal Width");
 
     return make_ellipse(vertical, horizontal);
@@ -141,11 +141,11 @@ static shape_t* input_ellipse(void) {
 
 static shape_t* input_right_triangle(void) {
     double vertical;
-    input("Enter the length of the vertical side: ", "%lf", &vertical);
+    input("Enter the length of the vertical side: ", DECIMAL, &vertical);
     ensure_positive(vertical, "Vertical Length");
 
     double horizontal;
-    input("Enter the length of the horizontal side: ", "%lf", &horizontal);
+    input("Enter the length of the horizontal side: ", DECIMAL, &horizontal);
     ensure_positive(horizontal, "Horizontal Length");
 
     return make_right_triangle(vertical, horizontal);
@@ -153,11 +153,11 @@ static shape_t* input_right_triangle(void) {
 
 static shape_t* input_rectangle(void) {
     double length;
-    input("Enter the length: ", "%lf", &length);
+    input("Enter the length: ", DECIMAL, &length);
     ensure_positive(length, "Length");
 
     double width;
-    input("Enter the width: ", "%lf", &width);
+    input("Enter the width: ", DECIMAL, &width);
     ensure_positive(width, "Width");
 
     return make_rectangle(length, width);
@@ -165,11 +165,11 @@ static shape_t* input_rectangle(void) {
 
 static shape_t* input_regular_polygon(void) {
     uint32_t sideCount;
-    input("Enter the number of sides: ", "%u", &sideCount);
+    input("Enter the number of sides: ", WHOLE, &sideCount);
     ensure_greater_than(sideCount, 2, "Number of Sides");
 
     double sideLength;
-    input("Enter the length of the sides: ", "%lf", &sideLength);
+    input("Enter the length of the sides: ", DECIMAL, &sideLength);
     ensure_positive(sideLength, "Side Length");
 
     return make_regular_polygon(sideLength, sideCount);
@@ -190,11 +190,11 @@ static point2d_t* enter_polygon_vertices(const size_t pointCount) {
 
         double xPos;
         sprintf(prompt, format, X_AXIS, count);
-        input(prompt, "%lf", &xPos);
+        input(prompt, DECIMAL, &xPos);
         
         double yPos;
         sprintf(prompt, format, Y_AXIS, count);
-        input(prompt, "%lf", &yPos);
+        input(prompt, DECIMAL, &yPos);
 
         point2d_t point = { xPos, yPos };
 
@@ -206,7 +206,7 @@ static point2d_t* enter_polygon_vertices(const size_t pointCount) {
 
 static shape_t* input_polygon(void) {
     size_t pointCount;
-    input("Enter the amount of points: ", "%u", &pointCount);
+    input("Enter the amount of points: ", WHOLE, &pointCount);
     ensure_greater_than(pointCount, 2, "Amount of Points");
 
     point2d_t* vertices = enter_polygon_vertices(pointCount);
@@ -260,7 +260,7 @@ static shape_option_t choose_shape_option(void) {
         "  Polygon(6)\n"
         "Enter (1-6): ";
     uint8_t choice;
-    input(prompt, "%u", &choice);
+    input(prompt, WHOLE, &choice);
 
     new_line();
     
