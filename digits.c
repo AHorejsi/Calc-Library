@@ -3,10 +3,14 @@
 
 
 size_t get_digit_count(const uint64_t value, const uint64_t radix) {
-    double valueLog = log(value);
-    double radixLog = log(radix);
+    if (0 == value) {
+        return 1;
+    }
 
-    return (size_t)(valueLog / radixLog) + 1;
+    double logResult = log(value) / log(radix);
+    size_t logFloor = (size_t)logResult;
+
+    return logFloor + 1;
 }
 
 uint64_t get_digit(const uint64_t value, const size_t index) {

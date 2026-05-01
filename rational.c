@@ -6,19 +6,16 @@
 #include <string.h>
 #include "alloc.h"
 #include "digits.h"
+#include "string_utils.h"
 #include "rational.h"
 
-#define RECURSION_DEPTH_LIMIT 16
+#define MIN_RECURSION_SIZE 16
 #define STRING_CONVERSION_LENGTH 20
 
 
-rational_t rational_pi(void) {
-    return from_decimal(M_PI);
-}
-
-rational_t rational_e(void) {
-    return from_decimal(M_E);
-}
+const rational_t INVALID_RATIONAL = { INVALID, 0, 0 };
+const rational_t ZERO_RATIONAL = { NEUTRAL, 0, 1 };
+const rational_t ONE_RATIONAL = { POSITIVE, 1, 1 };
 
 static sign_t get_sign_for_int64(const int64_t value) {
     if (value < 0) {
@@ -46,7 +43,7 @@ double to_decimal(const rational_t* num) {
         return NAN;
     }
 
-    double result = num->numerator / (double)num->denominator;
+    double result = num->numerator / (double)(num->denominator);
     
     if (NEGATIVE == num->sign) {
         result = -result;
@@ -57,7 +54,7 @@ double to_decimal(const rational_t* num) {
 
 static size_t find_count_of_decimal_places(const double value) {
     double valueAbs = fabs(value);
-    double decimalPart = valueAbs - floor(valueAbs);
+    double decimalPart = valueAbs - (int64_t)(valueAbs);
 
     char str[STRING_CONVERSION_LENGTH];
     size_t length = snprintf(str, STRING_CONVERSION_LENGTH, "%lf", decimalPart);
@@ -77,12 +74,6 @@ static sign_t get_sign_for_double(const double value) {
     }
 }
 
-static rational_t get_zero_rational(void) {
-    static const rational_t ZERO = { NEUTRAL, 0, 1 };
-
-    return ZERO;
-}
-
 static uint64_t gcd(uint64_t value1, uint64_t value2) {
     while (0 != value2) {
         uint64_t temp = value2;
@@ -93,26 +84,24 @@ static uint64_t gcd(uint64_t value1, uint64_t value2) {
     return value1;
 }
 
-static rational_t simplify_rational(const sign_t sign, uint64_t numerator, uint64_t denominator) {
+static rational_t simplify_rational(const sign_t sign, const uint64_t numerator, const uint64_t denominator) {
     uint64_t divisor = gcd(numerator, denominator);
 
-    numerator /= divisor;
-    denominator /= divisor;
+    if (0 == divisor) {
+        return ZERO_RATIONAL;
+    }
 
-    rational_t result = { sign, numerator, denominator };
+    uint64_t newNumerator = numerator / divisor;
+    uint64_t newDenominator = denominator / divisor;
+
+    rational_t result = { sign, newNumerator, newDenominator };
 
     return result;
 }
 
-static rational_t get_invalid_rational(void) {
-    static const rational_t INVALID_NUM = { INVALID, 0, 0 };
-
-    return INVALID_NUM;
-}
-
 rational_t from_decimal(const double value) {
     if (isnan(value)) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     size_t decimalPlaceCount = find_count_of_decimal_places(value);
@@ -126,14 +115,14 @@ rational_t from_decimal(const double value) {
 
 rational_t make_rational(const int64_t numerator, const int64_t denominator) {
     if (0 == denominator) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
     else if (0 == numerator) {
-        return get_zero_rational();
+        return ZERO_RATIONAL;
     }
     else {
-        uint64_t actualNumerator = (uint64_t)numerator;
-        uint64_t actualDenominator = (uint64_t)denominator;
+        uint64_t actualNumerator = abs(numerator);
+        uint64_t actualDenominator = abs(denominator);
         uint64_t divisor = gcd(actualNumerator, actualDenominator);
 
         sign_t sign = (numerator < 0 ^ denominator < 0) ? NEGATIVE : POSITIVE;
@@ -144,6 +133,10 @@ rational_t make_rational(const int64_t numerator, const int64_t denominator) {
 
         return result;
     }
+}
+
+bool is_integer(const rational_t* num) {
+    return 1 == num->denominator;
 }
 
 static uint64_t adjust_by_divisor(const uint64_t commonDenominator, const rational_t* num) {
@@ -197,7 +190,7 @@ static rational_t plus_helper(const rational_t* left, const rational_t* right) {
 
 rational_t rational_plus(const rational_t* left, const rational_t* right) {
     if (INVALID == left->sign || INVALID == right->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     if (NEUTRAL == left->sign) {
@@ -235,7 +228,7 @@ static rational_t actual_minus_with_positives(const rational_t* left, const rati
     uint64_t rightNumerator = adjust_by_divisor(newDenominator, right);
 
     if (leftNumerator == rightNumerator) {
-        return get_zero_rational();
+        return ZERO_RATIONAL;
     }
 
     uint64_t newNumerator;
@@ -284,7 +277,7 @@ static rational_t minus_helper(const rational_t* left, const rational_t* right) 
 
 rational_t rational_minus(const rational_t* left, const rational_t* right) {
     if (INVALID == left->sign || INVALID == right->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     if (NEUTRAL == left->sign) {
@@ -300,11 +293,11 @@ rational_t rational_minus(const rational_t* left, const rational_t* right) {
 
 rational_t rational_mult(const rational_t* left, const rational_t* right) {
     if (INVALID == left->sign || INVALID == right->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     if (NEUTRAL == left->sign || NEUTRAL == right->sign) {
-        return get_zero_rational();
+        return ZERO_RATIONAL;
     }
     else {
         uint64_t newNumerator = left->numerator * right->numerator;
@@ -319,22 +312,16 @@ rational_t rational_mult(const rational_t* left, const rational_t* right) {
 
 rational_t rational_div(const rational_t* left, const rational_t* right) {
     if (INVALID == left->sign || INVALID == right->sign || NEUTRAL == right->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
-    rational_t recip = rational_reciprocal(right);
+    rational_t reciprocalRight = rational_reciprocal(right);
 
-    return rational_mult(left, &recip);
-}
-
-static rational_t get_one_rational(void) {
-    static rational_t ONE = { POSITIVE, 1, 1 };
-
-    return ONE;
+    return rational_mult(left, &reciprocalRight);
 }
 
 static rational_t loop_power(const rational_t* value, const uint64_t exponent) {
-    rational_t result = get_one_rational();
+    rational_t result = ONE_RATIONAL;
 
     for (uint64_t count = 0; count < exponent; ++count) {
         result = rational_mult(&result, value);
@@ -343,27 +330,26 @@ static rational_t loop_power(const rational_t* value, const uint64_t exponent) {
     return result;
 }
 
-static rational_t rational_power(const rational_t* value, const uint64_t exponent) {
-    if (exponent <= RECURSION_DEPTH_LIMIT) {
+static rational_t exponentiation_for_rational(const rational_t* value, const uint64_t exponent) {
+    if (exponent <= MIN_RECURSION_SIZE) {
         return loop_power(value, exponent);
     }
-    else {
-        uint64_t halfExp = exponent / 2;
     
-        rational_t result = rational_power(value, halfExp);
-        result = rational_mult(&result, &result);
+    uint64_t halfExp = exponent / 2;
 
-        if (1 == exponent % 2) {
-            result = rational_mult(value, &result);
-        }
+    rational_t result = exponentiation_for_rational(value, halfExp);
+    result = rational_mult(&result, &result);
 
-        return result;
+    if (1 == exponent % 2) {
+        result = rational_mult(value, &result);
     }
+
+    return result;
 }
 
 static rational_t rational_root(const rational_t* value, const uint64_t root) {
     rational_t result = *value;
-    rational_t divisor = get_one_rational();
+    rational_t divisor = ONE_RATIONAL;
     rational_t rootRational = { POSITIVE, root, 1 };
 
     while (rational_lesser(&result, &divisor)) {
@@ -378,20 +364,18 @@ static rational_t rational_root(const rational_t* value, const uint64_t root) {
 
 rational_t rational_pow(const rational_t* left, const rational_t* right) {
     if (INVALID == left->sign || INVALID == right->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     if (NEUTRAL == right->sign) {
-        return get_one_rational();
+        return ONE_RATIONAL;
     }
 
-    rational_t result = rational_power(left, right->numerator);
+    rational_t result = exponentiation_for_rational(left, right->numerator);
     result = rational_root(&result, right->denominator);
 
     if (NEGATIVE == right->sign) {
-        rational_t ONE = get_one_rational();
-
-        return rational_div(&ONE, &result);
+        result = rational_reciprocal(&result);
     }
 
     return result;
@@ -411,7 +395,7 @@ rational_t rational_cbrt(const rational_t* num) {
 
 rational_t rational_reciprocal(const rational_t* num) {
     if (INVALID == num->sign || NEUTRAL == num->sign) {
-        return get_invalid_rational();
+        return INVALID_RATIONAL;
     }
 
     uint64_t newNumerator = num->denominator;
@@ -440,21 +424,110 @@ rational_t rational_max(const rational_t* left, const rational_t* right) {
     return rational_lesser(left, right) ? *right : *left;
 }
 
+rational_t rational_ceil(const rational_t* num) {
+    if (is_integer(num)) {
+        return *num;
+    }
+    else {
+        rational_t upped = rational_plus(num, &ONE_RATIONAL);
+
+        return rational_floor(&upped);
+    }
+}
+
+static rational_t middle_point(const rational_t* low, const rational_t* high, const rational_t* HALF) {
+    rational_t result = rational_plus(high, low);
+    result = rational_mult(&result, HALF);
+
+    return result;
+}
+
+static rational_t floor_linear_search(const rational_t* num) {
+    uint64_t denominator = num->denominator;
+    uint64_t end = denominator + 1;
+
+    for (uint64_t newNumerator = num->numerator - 1; newNumerator > end; --newNumerator) {
+        if (0 == newNumerator % denominator) {
+            return simplify_rational(num->sign, newNumerator, denominator);
+        }
+    }
+
+    return ONE_RATIONAL;
+}
+
+static rational_t floor_binary_search(const rational_t* num) {
+    const rational_t HALF = { POSITIVE, 1, 2 };
+
+    rational_t low = rational_minus(num, &ONE_RATIONAL);
+    rational_t high = *num;
+
+    while (true) {
+        rational_t middle = middle_point(&low, &high, &HALF);
+        
+        if (is_integer(&middle)) {
+            return middle;
+        }
+
+        rational_t diff = rational_minus(num, &middle);
+
+        if (rational_lesser(&ONE_RATIONAL, &diff)) {
+            low = middle;
+        }
+        else {
+            high = middle;
+        }
+    }
+
+    return low;
+}
+
+rational_t rational_floor(const rational_t* num) {
+    if (num->numerator < num->denominator) {
+        return ZERO_RATIONAL;
+    }
+    else if (is_integer(num)) {
+        return *num;
+    }
+    else if (abs(num->numerator - num->denominator) < MIN_RECURSION_SIZE) {
+        return floor_linear_search(num);
+    }
+    else {
+        return floor_binary_search(num);
+    }
+}
+
+rational_t rational_round(const rational_t* num) {
+    const rational_t HALF = { POSITIVE, 1, 2 };
+    rational_t upped = rational_plus(num, &HALF);
+
+    return rational_floor(&upped);
+}
+
+rational_t rational_exp(const rational_t* num) {
+    const rational_t EULER = from_decimal(M_E);
+
+    return rational_pow(&EULER, num);
+}
+
 bool rational_equal(const rational_t* left, const rational_t* right) {
     return left->sign == right->sign && left->numerator == right->numerator && left->denominator == right->denominator;
 }
 
 bool rational_lesser(const rational_t* left, const rational_t* right) {
-    if (INVALID == left->sign || INVALID == right->sign) {
+    if (left->sign == right->sign && (INVALID == left->sign || NEUTRAL == left->sign)) {
+        return true;
+    }
+    else if (INVALID == left->sign ^ INVALID == right->sign) {
         return false;
     }
+    else {
+        uint64_t divisor = lcm(left->denominator, right->denominator);
 
-    uint64_t divisor = lcm(left->denominator, right->denominator);
+        uint64_t leftNumerator = adjust_by_divisor(divisor, left);
+        uint64_t rightNumerator = adjust_by_divisor(divisor, right);
 
-    uint64_t leftNumerator = adjust_by_divisor(divisor, left);
-    uint64_t rightNumerator = adjust_by_divisor(divisor, right);
-
-    return leftNumerator < rightNumerator;
+        return leftNumerator < rightNumerator;
+    }
 }
 
 bool rational_greater(const rational_t* left, const rational_t* right) {
@@ -462,9 +535,55 @@ bool rational_greater(const rational_t* left, const rational_t* right) {
 }
 
 bool rational_lesser_or_equal(const rational_t* left, const rational_t* right) {
-    return rational_equal(left, right) || rational_lesser(left, right);
+    return !rational_greater(left, right);
 }
 
 bool rational_greater_or_equal(const rational_t* left, const rational_t* right) {
-    return rational_equal(left, right) || rational_greater(left, right);
+    return !rational_lesser(left, right);
+}
+
+static void build_string_part(char** destPtr, const char* srcPtr) {
+    char* dest = *destPtr;
+
+    for (char* ptr = (char*)srcPtr; END_CHAR != *ptr; ++ptr) {
+        *dest = *ptr;
+        ++dest;
+    }
+}
+
+static char* build_rational_string(const char* sign, const char* numerator, const char* denominator, const size_t totalLength) {
+    char* result = (char*)malloc(totalLength * sizeof(char));
+    check_alloc(result);
+
+    char* ptr = result;
+
+    build_string_part(&ptr, sign);
+    build_string_part(&ptr, "(");
+    build_string_part(&ptr, numerator);
+    build_string_part(&ptr, " / ");
+    build_string_part(&ptr, denominator);
+    build_string_part(&ptr, ")");
+
+    *ptr = END_CHAR;
+
+    return result;
+}
+
+char* rational_string(const rational_t* num) {
+    if (INVALID == num->sign) {
+        return NULL;
+    }
+
+    char numeratorStr[STRING_CONVERSION_LENGTH];
+    size_t numeratorLength = sprintf(numeratorStr, "%lu", num->numerator);
+
+    char denominatorStr[STRING_CONVERSION_LENGTH];
+    size_t denominatorLength = sprintf(denominatorStr, "%lu", num->denominator);
+
+    char* signStr = (NEGATIVE == num->sign) ? "-" : "";
+    size_t signLength = strlen(signStr);
+    
+    size_t totalLength = signLength + numeratorLength + denominatorLength + 6;
+
+    return build_rational_string(signStr, numeratorStr, denominatorStr, totalLength);
 }

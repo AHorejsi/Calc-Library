@@ -12,13 +12,15 @@ void check_alloc(const void* ptr) {
 }
 
 void* falloc(const size_t count, const size_t byteSize, const void* fill) {
-    void* array = malloc(count * byteSize);
+    size_t totalBytes = count * byteSize;
+
+    void* array = malloc(totalBytes);
     check_alloc(array);
 
-    char* startPtr = (char*)array;
-    char* endPtr = startPtr + (count * byteSize);
+    byte_t* startPtr = (byte_t*)array;
+    byte_t* endPtr = startPtr + totalBytes;
 
-    for (char* ptr = startPtr; ptr < endPtr; ptr += byteSize) {
+    for (byte_t* ptr = startPtr; ptr < endPtr; ptr += byteSize) {
         memcpy(ptr, fill, byteSize);
     }
 

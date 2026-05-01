@@ -1,12 +1,7 @@
-#include "radix_main.h"
-#include "shape2d_main.h"
+#include "radix_test.h"
 #include "start.h"
 
 
-void radix_start(void) {
-    run_radix();
-}
-
-void shape2d_start(void) {
-    run_shape2d();
+void radix_test(void) {
+    run_radix_test();
 }

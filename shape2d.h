@@ -13,7 +13,7 @@ typedef struct {
 typedef struct {
     double(*perimeter)(const void*);
     double(*area)(const void*);
-    polygon_t(*polygon)(const void*, const point2d_t, const size_t, const double);
+    polygon_t(*polygon)(const void*, const point2d_t*, const size_t, const double);
     void(*destroy)(void*);
 } shape_vtable_t;
 
@@ -41,7 +41,7 @@ double perimeter(const shape_t*);
 
 double area(const shape_t*);
 
-polygon_t from(const shape_t*, const point2d_t, const size_t, const double);
+polygon_t from_shape(const shape_t*, const point2d_t*, const size_t, const double);
 
 double perimeter_of_polygon(const polygon_t*);
 

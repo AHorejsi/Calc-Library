@@ -1,12 +1,5 @@
 #define _USE_MATH_DEFINES
 
-#define NAME_CIRCLE "Circle"
-#define NAME_ELLIPSE "Ellipse"
-#define NAME_RIGHT_TRIANGLE "Right Triangle"
-#define NAME_RECTANGLE "Rectangle"
-#define NAME_REGULAR_POLYGON "Regular Polygon"
-#define NAME_POLYGON "Polygon"
-
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,6 +7,13 @@
 #include "alloc.h"
 #include "radian.h"
 #include "shape2d.h"
+
+#define NAME_CIRCLE "Circle"
+#define NAME_ELLIPSE "Ellipse"
+#define NAME_RIGHT_TRIANGLE "Right Triangle"
+#define NAME_RECTANGLE "Rectangle"
+#define NAME_REGULAR_POLYGON "Regular Polygon"
+#define NAME_POLYGON "Polygon"
 
 
 typedef struct {
@@ -48,30 +48,30 @@ static void default_destroy(void* ptr) {
 }
 
 static double circle_perimeter(const void* ptr) {
-    circle_t circle = *(circle_t*)ptr;
+    circle_t* circle = (circle_t*)ptr;
 
-    return 2 * M_PI * circle.radius;
+    return 2 * M_PI * circle->radius;
 }
 
 static double circle_area(const void* ptr) {
-    circle_t circle = *(circle_t*)ptr;
+    circle_t* circle = (circle_t*)ptr;
 
-    return M_PI * circle.radius * circle.radius;
+    return M_PI * circle->radius * circle->radius;
 }
 
-static point2d_t circle_point(const circle_t circle, const point2d_t center, const size_t index, const size_t pointCount) {
+static point2d_t circle_point(const circle_t* circle, const point2d_t* center, const size_t index, const size_t pointCount) {
     double radians = unit_circle(index, pointCount);
 
-    double xPos = circle.radius * cos(radians);
-    double yPos = circle.radius * sin(radians);
+    double xPos = circle->radius * cos(radians);
+    double yPos = circle->radius * sin(radians);
 
     point2d_t point = { xPos, yPos };
 
-    return translate(point, center);
+    return translate(&point, center);
 }
 
-static polygon_t circle_to_polygon(const void* ptr, point2d_t center, size_t pointCount, double _) {
-    circle_t circle = *(circle_t*)ptr;
+static polygon_t circle_to_polygon(const void* ptr, const point2d_t* center, const size_t pointCount, const double _) {
+    circle_t* circle = (circle_t*)ptr;
 
     point2d_t* vertices = (point2d_t*)malloc(pointCount * sizeof(point2d_t));
     check_alloc(vertices);
@@ -113,10 +113,10 @@ shape_t* make_circle(const double radius) {
 }
 
 static double ellipse_perimeter(const void* ptr) {
-    ellipse_t ellipse = *(ellipse_t*)ptr;
+    ellipse_t* ellipse = (ellipse_t*)ptr;
     
-    double sum = ellipse.horizontal + ellipse.vertical;
-    double diff = ellipse.horizontal - ellipse.vertical;
+    double sum = ellipse->horizontal + ellipse->vertical;
+    double diff = ellipse->horizontal - ellipse->vertical;
 
     double param1 = 3 * (diff * diff) / (sum * sum);
     double param2 = 10 + sqrt(4 - param1);
@@ -126,33 +126,33 @@ static double ellipse_perimeter(const void* ptr) {
 }
 
 static double ellipse_area(const void* ptr) {
-    ellipse_t ellipse = *(ellipse_t*)ptr;
+    ellipse_t* ellipse = (ellipse_t*)ptr;
 
-    return M_PI * ellipse.vertical * ellipse.horizontal;
+    return M_PI * ellipse->vertical * ellipse->horizontal;
 }
 
-static point2d_t ellipse_point(const ellipse_t ellipse, const point2d_t center, const double rotation, const size_t index, const size_t pointCount) {
+static point2d_t ellipse_point(const ellipse_t* ellipse, const point2d_t* center, const double rotation, const size_t index, const size_t pointCount) {
     double radians = unit_circle(index, pointCount);
 
     point2d_t unitCirclePos = { cos(radians), sin(radians) };
-    line_t line = between(center, unitCirclePos);
+    line_t line = between(center, &unitCirclePos);
 
-    double semiminorAxis = fmin(ellipse.horizontal, ellipse.vertical);
-    double semimajorAxis = fmax(ellipse.horizontal, ellipse.vertical);
+    double semiminorAxis = fmin(ellipse->horizontal, ellipse->vertical);
+    double semimajorAxis = fmax(ellipse->horizontal, ellipse->vertical);
 
     double semiminorSquare = semiminorAxis * semiminorAxis;
     double semimajorSquare = semimajorAxis * semimajorAxis;
 
-    double xPos = -(center.xPos) + sqrt(1 - pow(line.yIntercept - center.yPos, 2) / semimajorSquare - semiminorSquare);
+    double xPos = -(center->xPos) + sqrt(1 - pow(line.yIntercept - center->yPos, 2) / semimajorSquare - semiminorSquare);
     double yPos = line.slope * xPos + line.yIntercept;
 
     point2d_t point = { xPos, yPos };
 
-    return rotate_and_translate(point, center, rotation);
+    return rotate_and_translate(&point, center, rotation);
 }
 
-static polygon_t ellipse_to_polygon(const void* ptr, point2d_t center, size_t pointCount, double rotation) {
-    ellipse_t ellipse = *(ellipse_t*)ptr;
+static polygon_t ellipse_to_polygon(const void* ptr, const point2d_t* center, const size_t pointCount, const double rotation) {
+    ellipse_t* ellipse = (ellipse_t*)ptr;
 
     point2d_t* vertices = (point2d_t*)malloc(pointCount * sizeof(point2d_t));
     check_alloc(vertices);
@@ -177,28 +177,28 @@ shape_t* make_ellipse(const double vertical, const double horizontal) {
     return create_shape(&ellipse, sizeof(ellipse_t), NAME_ELLIPSE, &vtable);
 }
 
-static double hypotenuse(const right_triangle_t shape) {
-    return sqrt(shape.vertical * shape.vertical + shape.horizontal * shape.horizontal);
+static double hypotenuse(const right_triangle_t* shape) {
+    return sqrt(shape->vertical * shape->vertical + shape->horizontal * shape->horizontal);
 }
 
 static double right_triangle_perimeter(const void* ptr) {
-    right_triangle_t rightTriangle = *(right_triangle_t*)ptr;
+    right_triangle_t* rightTriangle = (right_triangle_t*)ptr;
 
-    return rightTriangle.vertical + rightTriangle.horizontal + hypotenuse(rightTriangle);
+    return rightTriangle->vertical + rightTriangle->horizontal + hypotenuse(rightTriangle);
 }
 
 static double right_triangle_area(const void* ptr) {
-    right_triangle_t rightTriangle = *(right_triangle_t*)ptr;
+    right_triangle_t* rightTriangle = (right_triangle_t*)ptr;
 
-    return 0.5 * rightTriangle.vertical * rightTriangle.horizontal;
+    return 0.5 * rightTriangle->vertical * rightTriangle->horizontal;
 }
 
-static point2d_t* find_right_triangle_vertices_around_origin(const right_triangle_t triangle, const size_t POINT_COUNT) {
-    point2d_t* vertices = (point2d_t*)malloc(POINT_COUNT * sizeof(right_triangle_t));
+static point2d_t* find_right_triangle_vertices_around_origin(const right_triangle_t* triangle, const size_t POINT_COUNT) {
+    point2d_t* vertices = (point2d_t*)malloc(POINT_COUNT * sizeof(point2d_t));
     check_alloc(vertices);
 
-    double thirdVertical = triangle.vertical / 3;
-    double thirdHorizontal = triangle.horizontal / 3;
+    double thirdVertical = triangle->vertical / 3;
+    double thirdHorizontal = triangle->horizontal / 3;
 
     point2d_t top = { thirdHorizontal, 2 * thirdVertical };
     point2d_t left = { -thirdHorizontal, -2 * thirdVertical };
@@ -211,15 +211,15 @@ static point2d_t* find_right_triangle_vertices_around_origin(const right_triangl
     return vertices;
 }
 
-static polygon_t right_triangle_to_polygon(const void* ptr, const point2d_t center, const size_t _, const double rotation) {
-    right_triangle_t triangle = *(right_triangle_t*)ptr;
+static polygon_t right_triangle_to_polygon(const void* ptr, const point2d_t* center, const size_t _, const double rotation) {
+    right_triangle_t* triangle = (right_triangle_t*)ptr;
 
     const size_t POINT_COUNT = 3;
     point2d_t* vertices = find_right_triangle_vertices_around_origin(triangle, POINT_COUNT);
 
-    vertices[0] = rotate_and_translate(vertices[0], center, rotation);
-    vertices[1] = rotate_and_translate(vertices[1], center, rotation);
-    vertices[2] = rotate_and_translate(vertices[2], center, rotation);
+    vertices[0] = rotate_and_translate(vertices + 0, center, rotation);
+    vertices[1] = rotate_and_translate(vertices + 1, center, rotation);
+    vertices[2] = rotate_and_translate(vertices + 2, center, rotation);
 
     polygon_t result = { vertices, POINT_COUNT };
 
@@ -238,22 +238,22 @@ shape_t* make_right_triangle(const double vertical, const double horizontal) {
 }
 
 static double rectangle_perimeter(const void* ptr) {
-    rectangle_t rectangle = *(rectangle_t*)ptr;
+    rectangle_t* rectangle = (rectangle_t*)ptr;
 
-    return rectangle.length + rectangle.length + rectangle.width + rectangle.width;
+    return rectangle->length + rectangle->length + rectangle->width + rectangle->width;
 }
 
 static double rectangle_area(const void* ptr) {
-    rectangle_t rectangle = *(rectangle_t*)ptr;
+    rectangle_t* rectangle = (rectangle_t*)ptr;
 
-    return rectangle.length * rectangle.width;
+    return rectangle->length * rectangle->width;
 }
 
-static polygon_t rectangle_to_polygon(const void* ptr, const point2d_t center, const size_t _, const double rotation) {
-    rectangle_t rectangle = *(rectangle_t*)ptr;
+static polygon_t rectangle_to_polygon(const void* ptr, const point2d_t* center, const size_t _, const double rotation) {
+    rectangle_t* rectangle = (rectangle_t*)ptr;
 
-    double halfLength = rectangle.length / 2;
-    double halfWidth = rectangle.width / 2;
+    double halfLength = rectangle->length / 2;
+    double halfWidth = rectangle->width / 2;
 
     point2d_t topLeft = { -halfWidth, halfLength };
     point2d_t topRight = { halfWidth, halfLength };
@@ -265,10 +265,10 @@ static polygon_t rectangle_to_polygon(const void* ptr, const point2d_t center, c
     point2d_t* vertices = (point2d_t*)malloc(POINT_COUNT * sizeof(point2d_t));
     check_alloc(vertices);
 
-    vertices[0] = rotate_and_translate(topLeft, center, rotation);
-    vertices[1] = rotate_and_translate(topRight, center, rotation);
-    vertices[2] = rotate_and_translate(bottomRight, center, rotation);
-    vertices[3] = rotate_and_translate(bottomLeft, center, rotation);
+    vertices[0] = rotate_and_translate(&topLeft, center, rotation);
+    vertices[1] = rotate_and_translate(&topRight, center, rotation);
+    vertices[2] = rotate_and_translate(&bottomRight, center, rotation);
+    vertices[3] = rotate_and_translate(&bottomLeft, center, rotation);
 
     polygon_t result = { vertices, POINT_COUNT };
 
@@ -287,41 +287,41 @@ shape_t* make_rectangle(const double length, const double width) {
 }
 
 static double regular_polygon_perimeter(const void* ptr) {
-    regular_polygon_t regularPolygon = *(regular_polygon_t*)ptr;
+    regular_polygon_t* regularPolygon = (regular_polygon_t*)ptr;
 
-    return regularPolygon.sideCount * regularPolygon.sideLength;
+    return regularPolygon->sideCount * regularPolygon->sideLength;
 }
 
 static double regular_polygon_area(const void* ptr) {
-    regular_polygon_t regularPolygon = *(regular_polygon_t*)ptr;
+    regular_polygon_t* regularPolygon = (regular_polygon_t*)ptr;
 
-    return (regularPolygon.sideLength * regularPolygon.sideLength * regularPolygon.sideCount) / (4 * tan(M_PI / regularPolygon.sideCount));
+    return (regularPolygon->sideLength * regularPolygon->sideLength * regularPolygon->sideCount) / (4 * tan(M_PI / regularPolygon->sideCount));
 }
 
-static double circumradius(const regular_polygon_t shape) {
-    return shape.sideLength / (2 * sin(M_PI / shape.sideCount));
+static double circumradius(const regular_polygon_t* shape) {
+    return shape->sideLength / (2 * sin(M_PI / shape->sideCount));
 }
 
-static polygon_t regular_polygon_to_polygon(const void* ptr, const point2d_t center, const size_t _, const double rotation) {
-    regular_polygon_t polygon = *(regular_polygon_t*)ptr;
+static polygon_t regular_polygon_to_polygon(const void* ptr, const point2d_t* center, const size_t _, const double rotation) {
+    regular_polygon_t* polygon = (regular_polygon_t*)ptr;
 
-    point2d_t* vertices = (point2d_t*)malloc(polygon.sideCount * sizeof(point2d_t));
+    point2d_t* vertices = (point2d_t*)malloc(polygon->sideCount * sizeof(point2d_t));
     check_alloc(vertices);
 
     double distanceToVertices = circumradius(polygon);
 
-    for (size_t index = 0; index < polygon.sideCount; ++index) {
-        double radians = unit_circle(index, polygon.sideCount);
+    for (size_t index = 0; index < polygon->sideCount; ++index) {
+        double radians = unit_circle(index, polygon->sideCount);
 
         double xPos = distanceToVertices * cos(radians);
         double yPos = distanceToVertices * sin(radians);
 
         point2d_t point = { xPos, yPos };
 
-        vertices[index] = rotate_and_translate(point, center, rotation);
+        vertices[index] = rotate_and_translate(&point, center, rotation);
     }
 
-    polygon_t result = { vertices, polygon.sideCount };
+    polygon_t result = { vertices, polygon->sideCount };
 
     return result;
 }
@@ -357,7 +357,7 @@ static void polygon_destroy(void* ptr) {
     default_destroy(shape);
 }
 
-static polygon_t polygon_to_polygon(const void* ptr, const point2d_t _1, const size_t _2, const double _3) {
+static polygon_t polygon_to_polygon(const void* ptr, const point2d_t* _1, const size_t _2, const double _3) {
     polygon_t polygon = *(polygon_t*)ptr;
 
     size_t byteCount = polygon.pointCount * sizeof(point2d_t);
@@ -372,28 +372,28 @@ static polygon_t polygon_to_polygon(const void* ptr, const point2d_t _1, const s
     return result;
 }
 
-static bool in_range(const point2d_t pos1, const point2d_t pos2, const point2d_t intersectPoint) {
-    double lowerXPos = fmin(pos1.xPos, pos2.xPos);
-    double lowerYPos = fmin(pos1.yPos, pos2.yPos);
-    double upperXPos = fmax(pos1.xPos, pos2.xPos);
-    double upperYPos = fmax(pos1.yPos, pos2.yPos);
+static bool in_range(const point2d_t* pos1, const point2d_t* pos2, const point2d_t* intersectPos) {
+    double lowerXPos = fmin(pos1->xPos, pos2->xPos);
+    double lowerYPos = fmin(pos1->yPos, pos2->yPos);
+    double upperXPos = fmax(pos1->xPos, pos2->xPos);
+    double upperYPos = fmax(pos1->yPos, pos2->yPos);
 
-    bool inXRange = intersectPoint.xPos < lowerXPos && intersectPoint.xPos > upperXPos;
-    bool inYRange = intersectPoint.yPos < lowerYPos && intersectPoint.yPos > upperYPos;
+    bool inXRange = intersectPos->xPos < lowerXPos && intersectPos->xPos > upperXPos;
+    bool inYRange = intersectPos->yPos < lowerYPos && intersectPos->yPos > upperYPos;
     bool inRange = !(inXRange && inYRange);
 
     return inRange;
 }
 
-static bool has_intersection(const line_t* lines, const size_t lineCount, const line_t connection, const point2d_t limit1, const point2d_t limit2) {
+static bool has_intersection(const line_t* lines, const size_t lineCount, const line_t* connection, const point2d_t* limit1, const point2d_t* limit2) {
     for (size_t index = 0; index < lineCount; ++index) {
-        point2d_t intersectPoint = intersection(lines[index], connection);
+        point2d_t intersectPos = intersection(lines + index, connection);
 
-        if (isnan(intersectPoint.xPos)) {
+        if (isnan(intersectPos.xPos)) {
             continue;
         }
 
-        if (in_range(limit1, limit2, intersectPoint)) {
+        if (in_range(limit1, limit2, &intersectPos)) {
             return true;
         }
     }
@@ -414,12 +414,12 @@ static bool is_polygon(const point2d_t* points, const size_t pointCount) {
     for (size_t index = 0; index < pointCount; ++index) {
         size_t nextIndex = (index == endIndex) ? 0 : index + 1;
 
-        point2d_t current = points[index];
-        point2d_t next = points[nextIndex];
+        const point2d_t* current = points + index;
+        const point2d_t* next = points + nextIndex;
 
         line_t connection = between(current, next);
 
-        if (has_intersection(lines, index, connection, current, next)) {
+        if (has_intersection(lines, index, &connection, current, next)) {
             return false;
         }
 
@@ -472,7 +472,7 @@ static polygon_t get_null_polygon(void) {
     return NULL_POLYGON;
 }
 
-polygon_t from(const shape_t* shape, const point2d_t center, const size_t pointCount, const double rotation) {
+polygon_t from_shape(const shape_t* shape, const point2d_t* center, const size_t pointCount, const double rotation) {
     if (NULL == shape->ptr || NULL == shape->vtable.polygon) {
         return get_null_polygon();
     }
@@ -490,8 +490,8 @@ double perimeter_of_polygon(const polygon_t* polygon) {
     for (size_t index = 0; index < pointCount; ++index) {
         size_t nextIndex = (index == endIndex) ? 0 : index + 1;
 
-        point2d_t current = polygon->vertices[index];
-        point2d_t next = polygon->vertices[nextIndex];
+        point2d_t* current = polygon->vertices + index;
+        point2d_t* next = polygon->vertices + nextIndex;
 
         totalPerimeter += distance(current, next);
     }
@@ -508,11 +508,11 @@ double area_of_polygon(const polygon_t* polygon) {
     for (size_t index = 0; index < pointCount; ++index) {
         size_t nextIndex = (index == endIndex) ? 0 : index + 1;
 
-        point2d_t current = polygon->vertices[index];
-        point2d_t next = polygon->vertices[nextIndex];
+        point2d_t* current = polygon->vertices + index;
+        point2d_t* next = polygon->vertices + nextIndex;
 
-        double height = (current.yPos + next.yPos) / 2;
-        double width = current.xPos - next.xPos;
+        double height = (current->yPos + next->yPos) / 2;
+        double width = current->xPos - next->xPos;
 
         totalArea += height * width;
     }

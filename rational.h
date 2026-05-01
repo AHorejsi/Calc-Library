@@ -18,9 +18,9 @@ typedef struct {
     uint64_t denominator;
 } rational_t;
 
-rational_t rational_pi(void);
-
-rational_t rational_e(void);
+extern const rational_t INVALID_RATIONAL;
+extern const rational_t ZERO_RATIONAL;
+extern const rational_t ONE_RATIONAL;
 
 rational_t from_decimal(const double);
 
@@ -29,6 +29,8 @@ rational_t from_integer(const int64_t);
 double to_decimal(const rational_t*);
 
 rational_t make_rational(const int64_t, const int64_t);
+
+bool is_integer(const rational_t*);
 
 rational_t rational_plus(const rational_t*, const rational_t*);
 
@@ -54,13 +56,15 @@ rational_t rational_min(const rational_t*, const rational_t*);
 
 rational_t rational_max(const rational_t*, const rational_t*);
 
-uint64_t rational_ceil(const rational_t*);
+rational_t rational_ceil(const rational_t*);
 
-uint64_t rational_floor(const rational_t*);
+rational_t rational_floor(const rational_t*);
 
-uint64_t rational_round(const rational_t*);
+rational_t rational_round(const rational_t*);
 
 rational_t rational_log(const rational_t*, const rational_t*);
+
+rational_t rational_exp(const rational_t*);
 
 bool rational_equal(const rational_t*, const rational_t*);
 
@@ -72,7 +76,11 @@ bool rational_lesser_or_equal(const rational_t*, const rational_t*);
 
 bool rational_greater_or_equal(const rational_t*, const rational_t*);
 
-void rational_string(const rational_t*, char*, const size_t);
+char* rational_string(const rational_t*);
+
+char* remainder_string(const rational_t*);
+
+void real_string(const rational_t*, char*, const size_t, const size_t);
 
 
 #endif

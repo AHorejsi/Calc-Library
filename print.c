@@ -4,17 +4,27 @@
 #include <string.h>
 #include "alloc.h"
 #include "error.h"
+#include "string_utils.h"
 #include "print.h"
 
 #define INPUT_SIZE 30
 
 
-static void do_scan(const input_format_t format, void* ptr) {
-    char response[INPUT_SIZE];
-
-    if (NULL == fgets(response, sizeof(response), stdin)) {
+static void get_input_string(char* response, const size_t inputSize) {
+    if (NULL == fgets(response, inputSize, stdin)) {
         fail("\nFailed to read user input\n");
     }
+
+    size_t endIndex = strlen(response) - 1;
+
+    if (LINE_FEED == response[endIndex]) {
+        response[endIndex] = END_CHAR;
+    }
+}
+
+static void do_scan(const input_format_t format, void* ptr) {
+    char response[INPUT_SIZE];
+    get_input_string(response, INPUT_SIZE);
 
     char* _;
 
