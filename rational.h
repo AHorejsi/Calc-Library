@@ -66,6 +66,12 @@ rational_t rational_log(const rational_t*, const rational_t*);
 
 rational_t rational_exp(const rational_t*);
 
+rational_t rational_sin(const rational_t*);
+
+rational_t rational_cos(const rational_t*);
+
+rational_t rational_tan(const rational_t*);
+
 bool rational_equal(const rational_t*, const rational_t*);
 
 bool rational_lesser(const rational_t*, const rational_t*);

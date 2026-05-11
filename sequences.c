@@ -30,27 +30,33 @@ double harmonic_element(const num_seq_t* seq, const uint32_t index) {
     return 1 / arithmetic_element(seq, index);
 }
 
-static void insert_fibonacci(uint64_t** ptr, const uint64_t item) {
-    **ptr = item;
-    ++(*ptr);
-}
-
 uint64_t* fibonacci_list(const size_t count) {
+    if (0 == count) {
+        return NULL;
+    }
+
     uint64_t* elements = (uint64_t*)malloc(count * sizeof(uint64_t));
     check_alloc(elements);
 
-    uint64_t* ptr = elements;
+    if (1 == count) {
+        *elements = 0;
+
+        return elements;
+    }
+
     uint64_t first = 0;
     uint64_t second = 1;
     bool useFirst = true;
 
-    insert_fibonacci(&ptr, first);
-    insert_fibonacci(&ptr, second);
+    uint64_t* ptr = elements;
+
+    *(ptr++) = first;
+    *(ptr++) = second;
 
     for (size_t index = 2; index < count; ++index) {
         uint64_t sum = first + second;
 
-        insert_fibonacci(&ptr, sum);
+        *(ptr++) = sum;
 
         if (useFirst) {
             first = sum;

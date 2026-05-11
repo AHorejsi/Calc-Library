@@ -15,7 +15,7 @@ extern const complex_t TWO_COMPLEX;
 extern const complex_t IMAG_COMPLEX;
 extern const complex_t NAN_COMPLEX;
 
-complex_t from_real_to_complex(const double);
+complex_t from_real(const double);
 
 complex_t from_polar(const double, const double);
 

@@ -9,7 +9,8 @@
 #include "string_utils.h"
 #include "rational.h"
 
-#define MIN_RECURSION_SIZE 16
+#define MIN_EXPONENT 16
+#define MIN_SEARCH_SIZE 16
 #define STRING_CONVERSION_LENGTH 20
 
 
@@ -304,9 +305,7 @@ rational_t rational_mult(const rational_t* left, const rational_t* right) {
         uint64_t newDenominator = left->denominator * right->denominator;
         sign_t newSign = (POSITIVE == left->sign ^ POSITIVE == right->sign) ? NEGATIVE : POSITIVE;
 
-        rational_t result = { newSign, newNumerator, newDenominator };
-
-        return result;
+        return simplify_rational(newSign, newNumerator, newDenominator);
     }
 }
 
@@ -320,31 +319,46 @@ rational_t rational_div(const rational_t* left, const rational_t* right) {
     return rational_mult(left, &reciprocalRight);
 }
 
-static rational_t loop_power(const rational_t* value, const uint64_t exponent) {
+static rational_t loop_power(const rational_t* value, const uint8_t exponent) {
     rational_t result = ONE_RATIONAL;
 
-    for (uint64_t count = 0; count < exponent; ++count) {
+    for (uint8_t count = 0; count < exponent; ++count) {
         result = rational_mult(&result, value);
     }
 
     return result;
 }
 
-static rational_t exponentiation_for_rational(const rational_t* value, const uint64_t exponent) {
-    if (exponent <= MIN_RECURSION_SIZE) {
-        return loop_power(value, exponent);
+static uint64_t nearest_lesser_power_of_2(uint64_t value) {
+    --value;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    ++value;
+
+    return value / 2;
+}
+
+static rational_t rational_exponent(const rational_t* value, const uint64_t exponent) {
+    rational_t result = *value;
+    uint64_t currentExponent = exponent;
+
+    while (currentExponent >= MIN_EXPONENT) {
+        uint64_t exponentNearestPowerOfTwo = nearest_lesser_power_of_2(currentExponent);
+        uint64_t iterations = (uint64_t)log2(exponentNearestPowerOfTwo);
+
+        for (size_t index = 0; index < iterations; ++index) {
+            result = rational_mult(&result, &result);
+        }
+
+        currentExponent -= exponentNearestPowerOfTwo;
     }
-    
-    uint64_t halfExp = exponent / 2;
 
-    rational_t result = exponentiation_for_rational(value, halfExp);
-    result = rational_mult(&result, &result);
+    rational_t remain = loop_power(value, currentExponent);
 
-    if (1 == exponent % 2) {
-        result = rational_mult(value, &result);
-    }
-
-    return result;
+    return rational_mult(&result, &remain);
 }
 
 static rational_t rational_root(const rational_t* value, const uint64_t root) {
@@ -371,7 +385,7 @@ rational_t rational_pow(const rational_t* left, const rational_t* right) {
         return ONE_RATIONAL;
     }
 
-    rational_t result = exponentiation_for_rational(left, right->numerator);
+    rational_t result = rational_exponent(left, right->numerator);
     result = rational_root(&result, right->denominator);
 
     if (NEGATIVE == right->sign) {
@@ -488,7 +502,7 @@ rational_t rational_floor(const rational_t* num) {
     else if (is_integer(num)) {
         return *num;
     }
-    else if (abs(num->numerator - num->denominator) < MIN_RECURSION_SIZE) {
+    else if (abs(num->numerator - num->denominator) < MIN_SEARCH_SIZE) {
         return floor_linear_search(num);
     }
     else {
@@ -504,9 +518,56 @@ rational_t rational_round(const rational_t* num) {
 }
 
 rational_t rational_exp(const rational_t* num) {
-    const rational_t EULER = from_decimal(M_E);
+    const rational_t E = from_decimal(M_E);
 
-    return rational_pow(&EULER, num);
+    return rational_pow(&E, num);
+}
+
+static rational_t compute_k(void) {
+    static rational_t k = ONE_RATIONAL;
+
+    if (!rational_equal(&ONE_RATIONAL, &k)) {
+        return k;
+    }
+
+    const uint8_t ITERATIONS_COUNT = 16;
+    const rational_t TWO = { POSITIVE, 2, 1 };
+    const rational_t NEG_TWO = { NEGATIVE, 2, 1 };
+    
+    rational_t index = ONE_RATIONAL;
+
+    while (index.numerator < ITERATIONS_COUNT) {
+        rational_t a = rational_mult(&NEG_TWO, &index);
+        a = rational_pow(&TWO, &a);
+        a = rational_plus(&ONE_RATIONAL, &a);
+        a = rational_sqrt(&a);
+
+        k = rational_div(&k, &a);
+
+        ++(index.numerator);
+    }
+
+    return k;
+}
+
+rational_t rational_sin(const rational_t* num) {
+    rational_t k = compute_k();
+
+    
+}
+
+rational_t rational_cos(const rational_t* num) {
+    rational_t halfPi = from_decimal(M_PI_2);
+    rational_t shifted = rational_plus(num, &halfPi);
+
+    return rational_sin(&shifted);
+}
+
+rational_t rational_tan(const rational_t* num) {
+    rational_t sinValue = rational_sin(num);
+    rational_t cosValue = rational_cos(num);
+
+    return rational_div(&sinValue, &cosValue);
 }
 
 bool rational_equal(const rational_t* left, const rational_t* right) {

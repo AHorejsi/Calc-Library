@@ -13,7 +13,7 @@ const complex_t TWO_COMPLEX = { 2, 0 };
 const complex_t IMAG_COMPLEX = { 0, 1 };
 const complex_t NAN_COMPLEX = { NAN, NAN };
 
-complex_t from_real_to_complex(const double real) {
+complex_t from_real(const double real) {
     complex_t com = { real, 0 };
 
     return com;
@@ -81,6 +81,7 @@ complex_t complex_inv(const complex_t* num) {
 
 complex_t complex_div(const complex_t* left, const complex_t* right) {
     complex_t rightConj = complex_conj(right);
+
     complex_t numerator = complex_mult(left, &rightConj);
     double denominator = complex_mult(right, &rightConj).real;
 
@@ -148,11 +149,11 @@ static complex_t log_imag(const double imag) {
 
     if (imag > 0) {
         newReal = log(imag);
-        newImag = M_PI / 2;
+        newImag = M_PI_2;
     }
     else {
         newReal = log(-imag);
-        newImag = -M_PI / 2;
+        newImag = -M_PI_2;
     }
 
     complex_t result = { newReal, newImag };
@@ -161,8 +162,8 @@ static complex_t log_imag(const double imag) {
 }
 
 complex_t complex_log(const complex_t* num) {
-    bool zeroReal = nearly_equal(num->real, 0);
-    bool zeroImag = nearly_equal(num->imag, 0);
+    bool zeroReal = nearly_equal(0, num->real);
+    bool zeroImag = nearly_equal(0, num->imag);
 
     if (zeroReal && zeroImag) {
         return NAN_COMPLEX;
@@ -337,8 +338,7 @@ bool complex_equal(const complex_t* left, const complex_t* right) {
 }
 
 static void make_zero_string(char* str, size_t* length) {
-    str[0] = '0';
-
+    *str = '0';
     *length = 1;
 }
 
